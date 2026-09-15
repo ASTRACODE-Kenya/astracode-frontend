@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAccount, useConnect, useDisconnect, useWriteContract, useReadContract } from "wagmi";
 import { EVM_CONFIG } from "@/config/contracts";
 
@@ -22,11 +22,15 @@ const OPTIONS = [
 ];
 
 export function EvmVoting() {
+  // Prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContractAsync } = useWriteContract();
-  
+
   const [status, setStatus] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
@@ -42,6 +46,20 @@ export function EvmVoting() {
     functionName: "votesOptionB",
   });
 
+  // Target MetaMask explicitly to bypass Phantom's EVM injection
+  const handleConnect = () => {
+    try {
+      const mmConnector = connectors.find((c) => c.name.toLowerCase().includes("metamask")) || connectors[0];
+      if (mmConnector) {
+        connect({ connector: mmConnector });
+      } else {
+        setStatus("Error: MetaMask not detected.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const castVote = async (option: 1 | 2) => {
     if (!isConnected) {
       setStatus("Error: Please connect MetaMask first.");
@@ -50,23 +68,22 @@ export function EvmVoting() {
     try {
       setLoading(true);
       setStatus("Please confirm the transaction in MetaMask...");
-      
+
       const txHash = await writeContractAsync({
         address: EVM_CONFIG.contractAddress,
         abi: EVM_CONFIG.abi,
         functionName: "castVote",
         args: [BigInt(option)],
       });
-      
+
       setStatus(`Vote Sent! 🎉 Tx: ${txHash.slice(0, 8)}... Waiting for block confirmation.`);
-      // Refetch stats after a short delay for block confirmation
       setTimeout(() => {
         refetchA();
         refetchB();
       }, 4000);
     } catch (error: any) {
       console.error(error);
-      if (error.message.includes("User rejected")) {
+      if (error.message?.includes("User rejected") || error.message?.includes("rejected")) {
         setStatus("Error: You rejected the transaction in MetaMask.");
       } else {
         setStatus(`Error: Transaction failed. Ensure you have Sepolia ETH.`);
@@ -84,9 +101,11 @@ export function EvmVoting() {
   const counts: Record<1 | 2, number> = { 1: valA, 2: valB };
   const leadingKey: 1 | 2 | null = total === 0 || valA === valB ? null : valA > valB ? 1 : 2;
 
+  // Do not render UI until mounted to avoid server/client connector mismatches
+  if (!mounted) return null;
+
   return (
     <div className="bg-[#0B0E14] border border-white/[0.06] rounded-3xl p-6 sm:p-10">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pb-8 mb-8 border-b border-white/[0.06]">
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -113,7 +132,7 @@ export function EvmVoting() {
             </button>
           ) : (
             <button
-              onClick={() => connect({ connector: connectors[0] })}
+              onClick={handleConnect}
               disabled={isConnecting || connectors.length === 0}
               className="px-6 py-2.5 bg-[#3B82F6] hover:bg-[#2563EB] text-white rounded-xl text-sm font-medium disabled:opacity-50 transition-colors"
             >
@@ -124,7 +143,6 @@ export function EvmVoting() {
       </div>
 
       <div className="space-y-8">
-        {/* Vote share bar */}
         <div>
           {total > 0 ? (
             <>
@@ -145,7 +163,6 @@ export function EvmVoting() {
           )}
         </div>
 
-        {/* Ballot */}
         <div className="border-y border-white/[0.06] divide-y divide-white/[0.06]">
           {OPTIONS.map((opt) => {
             const isLeading = opt.key === leadingKey;
@@ -185,7 +202,6 @@ export function EvmVoting() {
         </div>
       </div>
 
-      {/* Status */}
       {status && (
         <div className="mt-6 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-sm text-[#D8DCE3]">
           <span
