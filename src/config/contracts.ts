@@ -37,8 +37,8 @@ export const EVM_CONFIG = {
 };
 
 export const BITCOIN_CONFIG = {
-  network: "Testnet4",
+  network: "Testnet",
   optionAAddress: "tb1qastravoteoptiona000000000000000000000yes",
   optionBAddress: "tb1qastravoteoptionb0000000000000000000000no",
-  mempoolExplorerUrl: "https://mempool.space/testnet4/address/",
+  mempoolExplorerUrl: "https://mempool.space/testnet/address/", 
 };
