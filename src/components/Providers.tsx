@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
@@ -25,7 +25,11 @@ const wagmiConfig = createConfig({
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const endpoint = useMemo(() => clusterApiUrl("devnet"), []);
-  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
+  // Phantom, Backpack, and most modern wallets self-register via the Wallet
+  // Standard and are auto-detected — do NOT list PhantomWalletAdapter here too,
+  // or you get two competing entries and unreliable signTransaction behavior.
+  // Only list adapters for wallets that don't yet support the Wallet Standard.
+  const wallets = useMemo(() => [new SolflareWalletAdapter()], []);
 
   return (
     <WagmiProvider config={wagmiConfig}>
