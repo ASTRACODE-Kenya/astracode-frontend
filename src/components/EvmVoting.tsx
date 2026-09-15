@@ -2,12 +2,11 @@
 
 import React from "react";
 import { useAccount, useConnect, useDisconnect, useWriteContract, useReadContract } from "wagmi";
-import { injected } from "wagmi/connectors";
 import { EVM_CONFIG } from "@/config/contracts";
 
 export function EvmVoting() {
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
+  const { connect, connectors, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContract, isPending } = useWriteContract();
 
@@ -50,10 +49,11 @@ export function EvmVoting() {
           </button>
         ) : (
           <button
-            onClick={() => connect({ connector: injected() })}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold"
+            onClick={() => connect({ connector: connectors[0] })}
+            disabled={isConnecting || connectors.length === 0}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
           >
-            Connect MetaMask
+            {isConnecting ? "Check MetaMask…" : "Connect MetaMask"}
           </button>
         )}
       </div>
