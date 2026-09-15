@@ -8,16 +8,16 @@ import { clusterApiUrl } from "@solana/web3.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import { injected, metaMask } from "wagmi/connectors";
+import { injected } from "wagmi/connectors"; // ✅ Using injected instead of metaMask
 
 import "@solana/wallet-adapter-react-ui/styles.css"; 
 
 const queryClient = new QueryClient();
 
-// Add both metaMask and injected connectors to ensure detection
+// ✅ Only use the reliable injected connector
 const wagmiConfig = createConfig({
   chains: [sepolia],
-  connectors: [metaMask(), injected()],
+  connectors: [injected()],
   transports: {
     [sepolia.id]: http(),
   },

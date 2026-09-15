@@ -22,7 +22,6 @@ const OPTIONS = [
 ];
 
 export function EvmVoting() {
-  // Prevent hydration mismatch
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -46,28 +45,37 @@ export function EvmVoting() {
     functionName: "votesOptionB",
   });
 
-  // Target MetaMask explicitly to bypass Phantom's EVM injection
   const handleConnect = () => {
-    try {
-      const mmConnector = connectors.find((c) => c.name.toLowerCase().includes("metamask")) || connectors[0];
-      if (mmConnector) {
-        connect({ connector: mmConnector });
-      } else {
-        setStatus("Error: MetaMask not detected.");
-      }
-    } catch (err) {
-      console.error(err);
+    setStatus("Requesting wallet connection...");
+    
+    if (!connectors || connectors.length === 0) {
+      setStatus("Error: No compatible Web3 wallet found in your browser.");
+      return;
     }
+
+    // Connect using the standard injected wallet (MetaMask)
+    connect(
+      { connector: connectors[0] },
+      {
+        onError: (err) => {
+          console.error("Connect error:", err);
+          setStatus(`Connection Error: ${err.message.split('\n')[0]}`);
+        },
+        onSuccess: () => {
+          setStatus("Wallet connected successfully!");
+        }
+      }
+    );
   };
 
   const castVote = async (option: 1 | 2) => {
     if (!isConnected) {
-      setStatus("Error: Please connect MetaMask first.");
+      setStatus("Error: Please connect your wallet first.");
       return;
     }
     try {
       setLoading(true);
-      setStatus("Please confirm the transaction in MetaMask...");
+      setStatus("Please confirm the transaction in your wallet...");
 
       const txHash = await writeContractAsync({
         address: EVM_CONFIG.contractAddress,
@@ -84,7 +92,7 @@ export function EvmVoting() {
     } catch (error: any) {
       console.error(error);
       if (error.message?.includes("User rejected") || error.message?.includes("rejected")) {
-        setStatus("Error: You rejected the transaction in MetaMask.");
+        setStatus("Error: You rejected the transaction.");
       } else {
         setStatus(`Error: Transaction failed. Ensure you have Sepolia ETH.`);
       }
@@ -101,7 +109,6 @@ export function EvmVoting() {
   const counts: Record<1 | 2, number> = { 1: valA, 2: valB };
   const leadingKey: 1 | 2 | null = total === 0 || valA === valB ? null : valA > valB ? 1 : 2;
 
-  // Do not render UI until mounted to avoid server/client connector mismatches
   if (!mounted) return null;
 
   return (
