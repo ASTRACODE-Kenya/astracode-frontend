@@ -12,26 +12,34 @@ export const EVM_CONFIG = {
   contractAddress: "0x39eac7944a1b7b5ef1f91bc7ea1cf9b5a1704383" as `0x${string}`,
   abi: [
     {
-      inputs: [{ internalType: "uint256", name: "_option", type: "uint256" }],
-      name: "castVote",
+      inputs: [{ internalType: "uint256", name: "_choice", type: "uint256" }],
+      name: "vote",
       outputs: [],
       stateMutability: "nonpayable",
       type: "function",
     },
     {
       inputs: [],
-      name: "votesOptionA",
+      name: "votesForA",
       outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
       stateMutability: "view",
       type: "function",
     },
     {
       inputs: [],
-      name: "votesOptionB",
+      name: "votesForB",
       outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
       stateMutability: "view",
       type: "function",
     },
+    // 🚀 NEW: Added hasVoted mapping to the ABI
+    {
+      inputs: [{ internalType: "address", name: "", type: "address" }],
+      name: "hasVoted",
+      outputs: [{ internalType: "bool", name: "", type: "bool" }],
+      stateMutability: "view",
+      type: "function",
+    }
   ] as const,
 };
 

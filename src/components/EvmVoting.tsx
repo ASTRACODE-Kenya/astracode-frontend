@@ -9,14 +9,14 @@ const OPTIONS = [
     key: 1 as const,
     title: "Web3 Tip Jar",
     description: "Fans send testnet tokens and leave public messages. Covers token transfers and frontend state.",
-    accent: "#3B82F6", // Ethereum Blue
+    accent: "#3B82F6", 
     accentSoft: "rgba(59, 130, 246, 0.12)",
   },
   {
     key: 2 as const,
     title: "On-Chain Wall of Fame",
     description: "A decentralized guestbook where builders engrave their names permanently on the blockchain.",
-    accent: "#8B5CF6", // Ethereum Purple
+    accent: "#8B5CF6", 
     accentSoft: "rgba(139, 92, 246, 0.12)",
   },
 ];
@@ -25,7 +25,6 @@ export function EvmVoting() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // 🚀 Extract the active connector
   const { address, isConnected, connector: activeConnector } = useAccount();
   const { connect, connectors, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
@@ -37,23 +36,29 @@ export function EvmVoting() {
   const { data: votesA, refetch: refetchA } = useReadContract({
     address: EVM_CONFIG.contractAddress,
     abi: EVM_CONFIG.abi,
-    functionName: "votesOptionA",
+    functionName: "votesForA",
   });
 
   const { data: votesB, refetch: refetchB } = useReadContract({
     address: EVM_CONFIG.contractAddress,
     abi: EVM_CONFIG.abi,
-    functionName: "votesOptionB",
+    functionName: "votesForB",
+  });
+
+  // 🚀 NEW: Read the user's vote status from the blockchain
+  const { data: userHasVoted, refetch: refetchHasVoted } = useReadContract({
+    address: EVM_CONFIG.contractAddress,
+    abi: EVM_CONFIG.abi,
+    functionName: "hasVoted",
+    args: address ? [address as `0x${string}`] : ["0x0000000000000000000000000000000000000000"],
   });
 
   const handleConnect = () => {
     setStatus("Requesting wallet connection...");
-    
     if (!connectors || connectors.length === 0) {
       setStatus("Error: No compatible Web3 wallet found in your browser.");
       return;
     }
-
     connect(
       { connector: connectors[0] },
       {
@@ -80,9 +85,8 @@ export function EvmVoting() {
       const txHash = await writeContractAsync({
         address: EVM_CONFIG.contractAddress,
         abi: EVM_CONFIG.abi,
-        functionName: "castVote",
-        
-        args: [BigInt(option === 1 ? 0 : 1)], 
+        functionName: "vote",
+        args: [BigInt(option)], 
         connector: activeConnector,
         chainId: EVM_CONFIG.chainId,
         account: address as `0x${string}`,
@@ -90,10 +94,10 @@ export function EvmVoting() {
 
       setStatus(`Vote Sent!  Tx: ${txHash.slice(0, 8)}... Waiting for block confirmation.`);
       
-      
       setTimeout(() => {
         refetchA();
         refetchB();
+        refetchHasVoted(); // Refresh the lock state!
         setStatus(`Vote Confirmed & Counted! `);
       }, 15000);
 
@@ -102,7 +106,7 @@ export function EvmVoting() {
       if (error.message?.includes("User rejected") || error.message?.includes("rejected")) {
         setStatus("Error: You rejected the transaction.");
       } else {
-        setStatus(`Error: Transaction failed. Ensure you have Sepolia ETH.`);
+        setStatus(`Error: Transaction failed. You might have already voted!`);
       }
     } finally {
       setLoading(false);
@@ -202,13 +206,14 @@ export function EvmVoting() {
                     <div className="text-2xl font-bold text-white tabular-nums">{counts[opt.key]}</div>
                     <div className="text-xs text-[#7D8496]">votes</div>
                   </div>
+                  {/* Disable button if the user has already voted */}
                   <button
                     onClick={() => castVote(opt.key)}
-                    disabled={loading || !isConnected}
+                    disabled={loading || !isConnected || Boolean(userHasVoted)}
                     className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ backgroundColor: opt.accent }}
                   >
-                    {loading ? "..." : "Vote"}
+                    {userHasVoted ? "Voted" : loading ? "..." : "Vote"}
                   </button>
                 </div>
               </div>
