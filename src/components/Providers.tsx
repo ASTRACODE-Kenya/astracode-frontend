@@ -8,16 +8,16 @@ import { clusterApiUrl } from "@solana/web3.js";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { sepolia } from "wagmi/chains";
-import { injected } from "wagmi/connectors"; // ✅ Using injected instead of metaMask
+import { injected } from "wagmi/connectors";
 
 import "@solana/wallet-adapter-react-ui/styles.css"; 
 
 const queryClient = new QueryClient();
 
-// ✅ Only use the reliable injected connector
+// 🚀 Explicitly target MetaMask to filter out Phantom's fake EVM injection
 const wagmiConfig = createConfig({
   chains: [sepolia],
-  connectors: [injected()],
+  connectors: [injected({ target: 'metaMask' })],
   transports: {
     [sepolia.id]: http(),
   },

@@ -25,7 +25,8 @@ export function EvmVoting() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const { address, isConnected } = useAccount();
+  // 🚀 Extract the active connector
+  const { address, isConnected, connector: activeConnector } = useAccount();
   const { connect, connectors, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
   const { writeContractAsync } = useWriteContract();
@@ -53,7 +54,6 @@ export function EvmVoting() {
       return;
     }
 
-    // Connect using the standard injected wallet (MetaMask)
     connect(
       { connector: connectors[0] },
       {
@@ -69,7 +69,7 @@ export function EvmVoting() {
   };
 
   const castVote = async (option: 1 | 2) => {
-    if (!isConnected) {
+    if (!isConnected || !address) {
       setStatus("Error: Please connect your wallet first.");
       return;
     }
@@ -81,14 +81,22 @@ export function EvmVoting() {
         address: EVM_CONFIG.contractAddress,
         abi: EVM_CONFIG.abi,
         functionName: "castVote",
-        args: [BigInt(option)],
+        
+        args: [BigInt(option === 1 ? 0 : 1)], 
+        connector: activeConnector,
+        chainId: EVM_CONFIG.chainId,
+        account: address as `0x${string}`,
       });
 
-      setStatus(`Vote Sent! 🎉 Tx: ${txHash.slice(0, 8)}... Waiting for block confirmation.`);
+      setStatus(`Vote Sent!  Tx: ${txHash.slice(0, 8)}... Waiting for block confirmation.`);
+      
+      
       setTimeout(() => {
         refetchA();
         refetchB();
-      }, 4000);
+        setStatus(`Vote Confirmed & Counted! `);
+      }, 15000);
+
     } catch (error: any) {
       console.error(error);
       if (error.message?.includes("User rejected") || error.message?.includes("rejected")) {

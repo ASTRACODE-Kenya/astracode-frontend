@@ -9,8 +9,7 @@ export const SOLANA_CONFIG = {
 
 export const EVM_CONFIG = {
   chainId: 11155111, // Sepolia
-  // Kallen's deployed contract address
-  contractAddress: "0x356A2E46A72C8B5689E281F05Fe671D6Eb064Fa8" as `0x${string}`,
+  contractAddress: "0x39eac7944a1b7b5ef1f91bc7ea1cf9b5a1704383" as `0x${string}`,
   abi: [
     {
       inputs: [{ internalType: "uint256", name: "_option", type: "uint256" }],
